@@ -26,8 +26,9 @@ architecture top_basys3_arch of top_basys3 is
 
     -- signal declarations
     signal w_clk_div : std_logic;
-    signal w_clk_div_reset : std_logic := btnL or btnU;
-    signal w_elevator_reset : std_logic := btnU or btnR;
+    signal w_clk_div_reset : std_logic;
+    signal w_elevator_reset : std_logic;
+    signal w_clk_tdm : std_logic;
 	signal w_floor_1 : std_logic_vector(3 downto 0);
 	signal w_floor_2 : std_logic_vector(3 downto 0);
 	signal w_seg_1 : std_logic_vector(6 downto 0);
@@ -83,6 +84,13 @@ begin
         i_reset => w_clk_div_reset,
         o_clk => w_clk_div
         );
+    TDM_clk_div : clock_divider
+        generic map (k_DIV => 100000)
+        port map(
+            i_clk => clk,
+            i_reset => btnU,
+            o_clk => w_clk_tdm
+        );
     elevator_controller_fsm_inst : elevator_controller_fsm
         port map(
         i_clk => w_clk_div,
@@ -93,7 +101,7 @@ begin
         );
     sevenseg_decoder_inst : sevenseg_decoder
         port map(
-        i_hex => w_floor_1,
+        i_Hex => w_floor_1,
         o_seg_n => w_seg_1
         );
     elevator_controller_fsm_inst_1 : elevator_controller_fsm
@@ -106,22 +114,26 @@ begin
         );
     sevenseg_decoder_inst_1 : sevenseg_decoder
         port map(
-        i_hex => w_floor_2,
+        i_Hex => w_floor_2,
         o_seg_n => w_seg_2
         );
     TDM4_inst : TDM4
         port map(
-        i_clk => clk,
+        i_clk => w_clk_tdm,
         i_reset => btnU,
-        i_D3 => "0111000",
+        i_D3 => "0001110",
         i_D2 => w_seg_2,
-        i_D1 => "0111000",
+        i_D1 => "0001110",
         i_D0 => w_seg_1,
         o_data => seg,
-        o_sel => an
+        o_sel(0) => an(0),
+        o_sel(1) => an(1),
+        o_sel(2) => an(2),
+        o_sel(3) => an(3)
         );	
 	-- CONCURRENT STATEMENTS ----------------------------
-	
+	w_clk_div_reset <= btnL or btnU;
+	w_elevator_reset <= btnR or btnU;
 	-- LED 15 gets the FSM slow clock signal. The rest are grounded.
 	led(15) <= w_clk_div;
 	led(14 downto 0) <= (others => '0');
